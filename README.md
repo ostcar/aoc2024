@@ -32,7 +32,7 @@ roc dayXX.roc -- --help
 
 ## Useful links
 
-builtins: https://www.roc-lang.org/builtins
-parser: https://lukewilliamboswell.github.io/roc-parser/
-array2d: TODO
-ascii: https://hasnep.github.io/roc-ascii/
+* builtins: https://www.roc-lang.org/builtins
+* parser: https://lukewilliamboswell.github.io/roc-parser/
+* array2d: TODO
+* ascii: https://hasnep.github.io/roc-ascii/
