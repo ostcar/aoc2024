@@ -1,0 +1,7 @@
+# Roc creates binary files next to the .roc file. To ignore them, it is easier
+# to ignore everything and only include specific files.
+*
+!*.roc
+!*.md
+!LICENSE
+!.gitignore
