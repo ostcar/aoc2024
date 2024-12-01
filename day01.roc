@@ -1,5 +1,5 @@
 app [part1, part2] {
-    pf: platform "../roc-aoc-platform/platform/main.roc",
+    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.6/h-Fncg-ySjnWsh6mOiuaqdkz6wwfYCPCgy64Wep58YI.tar.br",
 }
 
 exampleInput =
