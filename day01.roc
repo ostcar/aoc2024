@@ -1,5 +1,5 @@
 app [part1, part2] {
-    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.5/0jGEKnFtQFKLIcVq59ZuLbVJqM4cTTElcZHTXFjqmvg.tar.br",
+    pf: platform "../roc-aoc-platform/platform/main.roc",
 }
 
 exampleInput =
@@ -14,18 +14,19 @@ exampleInput =
 
 expect
     got = part1 exampleInput
-    expected = "11" |> Str.toUtf8
+    expected = Ok "11"
     got == expected
 
-part1 : Str -> List U8
+part1 : Str -> Result Str _
 part1 = \input ->
     input
     |> parseNumbers
+    |> try
     |> sortNumbers
     |> diffNumbers
     |> List.sum
     |> Num.toStr
-    |> Str.toUtf8
+    |> Ok
 
 parseNumbers = \input ->
     input
@@ -39,9 +40,10 @@ parseNumbers = \input ->
                     Ok (n1, n2)
 
                 _ -> Err InvalidInput
-        |> Result.withDefault []
+        |> try
         |> List.walk ([], []) \(l1, l2), (n1, n2) ->
             (List.append l1 n1, List.append l2 n2)
+        |> Ok
 
 sortNumbers = \(list1, list2) ->
     (List.sortAsc list1, List.sortAsc list2)
@@ -51,16 +53,17 @@ diffNumbers = \(list1, list2) ->
 
 expect
     got = part2 exampleInput
-    expected = "31" |> Str.toUtf8
+    expected = Ok "31"
     got == expected
 
 part2 = \input ->
     input
     |> parseNumbers
+    |> try
     |> \(list1, list2) ->
         list1
         |> List.walk 0 \acc, n ->
             inList2 = list2 |> List.countIf \e -> e == n
             acc + n * inList2
     |> Num.toStr
-    |> Str.toUtf8
+    |> Ok
