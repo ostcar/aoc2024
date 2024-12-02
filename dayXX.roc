@@ -8,7 +8,10 @@ app [part1, part2] {
 examplePart1 =
     "the example for part 1"
 
-expect part1 examplePart1 == Ok "the example for part 1"
+expect
+    got = part1 examplePart1
+    expected = Ok "the example for part 1"
+    got == expected
 
 part1 = \input ->
     input
@@ -18,7 +21,10 @@ part1 = \input ->
 examplePart2 =
     "example for part 2"
 
-expect part2 examplePart2 == Ok "2 trap rof elpmaxe"
+expect
+    got = part2 examplePart2
+    expected = Ok "2 trap rof elpmaxe"
+    got == expected
 
 part2 = \input ->
     input
