@@ -6,7 +6,10 @@ app [part1, part2] {
 }
 
 examplePart1 =
-    "the example for part 1"
+    """
+    the example for
+    part 1
+    """
 
 expect
     got = part1 examplePart1
@@ -15,11 +18,15 @@ expect
 
 part1 = \input ->
     input
+    |> Str.replaceEach "\n" " "
     |> Ok
     |> Result.mapErr \_ -> ThisLineIsNecessaryForRoc
 
 examplePart2 =
-    "example for part 2"
+    """
+    example for
+    part 2
+    """
 
 expect
     got = part2 examplePart2
@@ -28,6 +35,7 @@ expect
 
 part2 = \input ->
     input
+    |> Str.replaceEach "\n" " "
     |> Str.toUtf8
     |> List.reverse
     |> Str.fromUtf8
