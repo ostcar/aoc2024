@@ -66,7 +66,6 @@ part2 = \input ->
     |> Num.toStr
     |> Ok
 
-# withTolerance : List U64, (List a -> Bool) -> Bool
 withTolerance = \list, func ->
     if func list then
         Bool.true
@@ -74,11 +73,7 @@ withTolerance = \list, func ->
 
     { start: At 0, end: Before (List.len list) }
     |> List.range
-    |> List.walkTry {} \_, index ->
-        oneRemoved = list |> List.dropAt index
-
-        if func oneRemoved then
-            Err {}
-        else
-            Ok {}
-    |> Result.isOk
+    |> List.any \index ->
+        list
+        |> List.dropAt index
+        |> func
