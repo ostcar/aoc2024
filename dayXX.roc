@@ -5,37 +5,24 @@ app [part1, part2] {
     ascii: "https://github.com/Hasnep/roc-ascii/releases/download/v0.2.0/F8xZFTEm1fA7RF6OA1jl6V_ef_roDHfwGsBva29RxEg.tar.br",
 }
 
-examplePart1 =
+example =
     """
     the example for
     part 1
     """
 
 expect
-    got = part1 examplePart1
-    expected = Ok "the example for part 1"
+    got = part1 example
+    expected = Ok "TODO"
     got == expected
 
-part1 = \input ->
-    input
-    |> Str.replaceEach "\n" " "
-    |> Ok
-    |> Result.mapErr \_ -> ThisLineIsNecessaryForRoc
-
-examplePart2 =
-    """
-    example for
-    part 2
-    """
+part1 = \_input ->
+    Err TODO
 
 expect
-    got = part2 examplePart2
-    expected = Ok "2 trap rof elpmaxe"
+    got = part2 example
+    expected = Ok "TODO"
     got == expected
 
-part2 = \input ->
-    input
-    |> Str.replaceEach "\n" " "
-    |> Str.toUtf8
-    |> List.reverse
-    |> Str.fromUtf8
+part2 = \_input ->
+    Err TODO
