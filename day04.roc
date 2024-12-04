@@ -1,6 +1,6 @@
 app [part1, part2] {
-    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.6/h-Fncg-ySjnWsh6mOiuaqdkz6wwfYCPCgy64Wep58YI.tar.br",
-    array2d: "https://github.com/mulias/roc-array2d/releases/download/v0.3.0/je3X2cSdUa6b24fO1SS_vGNS5MwU-a-3r1niP_7iG6k.tar.br",
+    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.7/Tg23npX1TEGNlsYqX1JfrdtvW4OlwLdvsFnJMUJNZSU.tar.br",
+    array2d: "https://github.com/mulias/roc-array2d/releases/download/v0.3.1/2Jqajvxn36vRryyQBSluU6Fo6vVI5yNSYmcJcyaKp0Y.tar.br",
 }
 
 import array2d.Array2D
@@ -31,7 +31,6 @@ part1 = \input ->
     |> findXMAS
     |> Num.toStr
     |> Ok
-    |> Result.mapErr \_ -> ThisLineIsNecessaryForRoc
 
 parse = \input ->
     input
@@ -89,7 +88,6 @@ part2 = \input ->
     |> arrayCountIndex isXMAS
     |> Num.toStr
     |> Ok
-    |> Result.mapErr \_ -> ThisLineIsNecessaryForRoc
 
 arrayCountIndex = \array, fn ->
     Array2D.walk array 0 { direction: Forwards } \acc, _, index ->

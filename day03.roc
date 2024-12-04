@@ -1,5 +1,5 @@
 app [part1, part2] {
-    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.6/h-Fncg-ySjnWsh6mOiuaqdkz6wwfYCPCgy64Wep58YI.tar.br",
+    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.7/Tg23npX1TEGNlsYqX1JfrdtvW4OlwLdvsFnJMUJNZSU.tar.br",
 }
 
 example =
@@ -15,7 +15,6 @@ part1 = \input ->
     |> calcMul
     |> Num.toStr
     |> Ok
-    |> Result.mapErr \_ -> PleaseFixMe
 
 calcMul = \input ->
     input
@@ -58,4 +57,3 @@ part2 = \input ->
     |> List.sum
     |> Num.toStr
     |> Ok
-    |> Result.mapErr \_ -> PleaseFixMe

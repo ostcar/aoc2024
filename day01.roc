@@ -1,5 +1,5 @@
 app [part1, part2] {
-    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.6/h-Fncg-ySjnWsh6mOiuaqdkz6wwfYCPCgy64Wep58YI.tar.br",
+    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.7/Tg23npX1TEGNlsYqX1JfrdtvW4OlwLdvsFnJMUJNZSU.tar.br",
 }
 
 exampleInput =
@@ -30,20 +30,20 @@ part1 = \input ->
 
 parseNumbers = \input ->
     input
-        |> Str.trim
-        |> Str.splitOn "\n"
-        |> List.mapTry \line ->
-            when Str.splitOn line "   " is
-                [s1, s2] ->
-                    n1 = Str.toU64? s1
-                    n2 = Str.toU64? s2
-                    Ok (n1, n2)
+    |> Str.trim
+    |> Str.splitOn "\n"
+    |> List.mapTry \line ->
+        when Str.splitOn line "   " is
+            [s1, s2] ->
+                n1 = Str.toU64? s1
+                n2 = Str.toU64? s2
+                Ok (n1, n2)
 
-                _ -> Err InvalidInput
-        |> try
-        |> List.walk ([], []) \(l1, l2), (n1, n2) ->
-            (List.append l1 n1, List.append l2 n2)
-        |> Ok
+            _ -> Err InvalidInput
+    |> try
+    |> List.walk ([], []) \(l1, l2), (n1, n2) ->
+        (List.append l1 n1, List.append l2 n2)
+    |> Ok
 
 sortNumbers = \(list1, list2) ->
     (List.sortAsc list1, List.sortAsc list2)
