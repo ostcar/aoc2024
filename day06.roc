@@ -1,5 +1,5 @@
 app [part1, part2] {
-    pf: platform "../roc-aoc-platform/platform/main.roc",
+    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
     array2d: "https://github.com/mulias/roc-array2d/releases/download/v0.3.1/2Jqajvxn36vRryyQBSluU6Fo6vVI5yNSYmcJcyaKp0Y.tar.br",
 }
 
@@ -62,9 +62,6 @@ go = \map, current, direction, indexes ->
             |> Ok
 
         Ok index ->
-            # if extra == index then
-            #    go map current (turn direction) extra newIndexes
-            #    else
             when Array2D.get? map index is
                 '#' ->
                     go map current (turn direction) newIndexes
