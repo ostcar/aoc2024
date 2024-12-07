@@ -27,13 +27,16 @@ expect
     got == expected
 
 part1 = \input ->
+    solve input Part1
+
+solve = \input, part ->
     equations = parseStr? puzzleParser (input |> Str.trim)
 
     equations
     |> List.walk 0 \acc, { numbers, result } ->
         when numbers is
             [first, .. as rest] ->
-                if isSolvable { numbers: rest, result } first then
+                if isSolvable { numbers: rest, result } first part then
                     acc + result
                 else
                     acc
@@ -56,20 +59,31 @@ equationParser =
     |> skip (string ": ")
     |> keep (digits |> sepBy (string " "))
 
-isSolvable = \{ result, numbers }, cur ->
+isSolvable = \{ result, numbers }, cur, part ->
     # dbg (numbers, operators, cur)
     when numbers is
         [] -> cur == result
         [a, .. as rest] ->
-            if isSolvable { result, numbers: rest } (cur + a) then
+            if isSolvable { result, numbers: rest } (cur + a) part then
                 Bool.true
+            else if isSolvable { result, numbers: rest } (cur * a) part then
+                Bool.true
+            else if part == Part1 then
+                Bool.false
             else
-                isSolvable { result, numbers: rest } (cur * a)
+                next = combineOperator cur a
+                isSolvable { result, numbers: rest } next part
+
+combineOperator = \a, b ->
+    # I know, this could be better
+    len = b |> Num.toStr |> Str.countUtf8Bytes
+    ten = Num.powInt 10 len
+    a * ten + b
 
 expect
     got = part2 example
-    expected = Ok "TODO"
+    expected = Ok "11387"
     got == expected
 
-part2 = \_input ->
-    Err TODO
+part2 = \input ->
+    solve input Part2
