@@ -75,10 +75,21 @@ isSolvable = \{ result, numbers }, cur, part ->
                 isSolvable { result, numbers: rest } next part
 
 combineOperator = \a, b ->
-    # I know, this could be better
-    len = b |> Num.toStr |> Str.countUtf8Bytes
+    len = numLen b 0
     ten = Num.powInt 10 len
     a * ten + b
+
+numLen = \a, result ->
+    # This should be implemented with Num.log10 if it would exist
+    if a // 10 == 0 then
+        result + 1
+    else
+        numLen (a // 10) (result + 1)
+
+expect
+    got = combineOperator 12 34
+    expected = 1234
+    got == expected
 
 expect
     got = part2 example
