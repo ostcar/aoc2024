@@ -30,12 +30,15 @@ part1 = \input ->
     equations = parseStr? puzzleParser (input |> Str.trim)
 
     equations
-    |> List.walk 0 \acc, equation ->
-        operators = isSolvable equation 0 []
-        if Result.isOk operators then
-            acc + equation.result
-        else
-            acc
+    |> List.walk 0 \acc, { numbers, result } ->
+        when numbers is
+            [first, .. as rest] ->
+                if isSolvable { numbers: rest, result } first then
+                    acc + result
+                else
+                    acc
+
+            _ -> acc
 
     |> Num.toStr
     |> Ok
@@ -53,15 +56,15 @@ equationParser =
     |> skip (string ": ")
     |> keep (digits |> sepBy (string " "))
 
-isSolvable = \{ result, numbers }, cur, operators ->
+isSolvable = \{ result, numbers }, cur ->
     # dbg (numbers, operators, cur)
     when numbers is
-        [] -> if cur == result then Ok operators else Err NotFound
+        [] -> cur == result
         [a, .. as rest] ->
-            when isSolvable { result, numbers: rest } (cur + a) (List.append operators "+") is
-                Ok ops -> Ok ops
-                Err NotFound ->
-                    isSolvable { result, numbers: rest } (cur * a) (List.append operators "*")
+            if isSolvable { result, numbers: rest } (cur + a) then
+                Bool.true
+            else
+                isSolvable { result, numbers: rest } (cur * a)
 
 expect
     got = part2 example
