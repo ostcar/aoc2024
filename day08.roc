@@ -31,7 +31,9 @@ part1 = \input ->
 
     map
     |> Dict.walk [] \acc, _, possitions ->
-        findAntinodes possitions acc
+        addPairs possitions acc
+    |> List.walk [] \acc, (pos1, pos2) ->
+        calcAntinode acc pos1 pos2
     |> List.keepIf \pos -> onMap pos maxCol maxRow
     |> countUnique
     |> Num.toStr
@@ -75,15 +77,15 @@ parse = \input ->
 
     { map, maxCol, maxRow }
 
-findAntinodes = \antennas, result ->
-    when antennas is
+addPairs = \list, result ->
+    when list is
         [] | [_] -> result
         [a, .. as rest] ->
             newResult =
                 rest
                 |> List.walk result \acc, b ->
-                    calcAntinode acc a b
-            findAntinodes rest newResult
+                    List.append acc (a, b)
+            addPairs rest newResult
 
 calcAntinode = \list, { col: colA, row: rowA }, { col: colB, row: rowB } ->
     list
@@ -110,5 +112,31 @@ expect
     expected = Ok "34"
     got == expected
 
-part2 = \_input ->
-    Err TODO
+part2 = \input ->
+    { map, maxCol, maxRow } = parse input
+
+    map
+    |> Dict.walk [] \acc, _, possitions ->
+        addPairs possitions acc
+    |> List.walk [] \acc, pair ->
+        walkOnMap maxCol maxRow pair acc
+    |> countUnique
+    |> Num.toStr
+    |> Ok
+
+walkOnMap = \maxCol, maxRow, ({ col: colA, row: rowA }, { col: colB, row: rowB }), result ->
+    colDiff = colA - colB
+    rowDiff = rowA - rowB
+
+    result
+    |> List.append { col: colA, row: rowA }
+    |> addPosStep maxCol maxRow { col: colA, row: rowA } colDiff rowDiff
+    |> addPosStep maxCol maxRow { col: colA, row: rowA } -colDiff -rowDiff
+
+addPosStep = \result, maxCol, maxRow, { col, row }, colStep, rowStep ->
+    newPos = { col: col + colStep, row: row + rowStep }
+    if onMap newPos maxCol maxRow then
+        newResult = result |> List.append newPos
+        addPosStep newResult maxCol maxRow newPos colStep rowStep
+    else
+        result
