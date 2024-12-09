@@ -26,7 +26,6 @@ part1 = \input ->
             calcChecksum resultIndex ip amount result Back
             |> Result.withDefault (result, resultIndex, ip)
 
-
     |> \(a, _, _) -> a
     |> Num.toStr
     |> Ok
@@ -36,8 +35,7 @@ calcChecksum = \resultIndex, idProvider, times, result, side ->
         Ok (result, resultIndex, idProvider)
     else
         (id, newProvider) = getNextID? idProvider side
-        calcChecksum (resultIndex+1) newProvider (times-1) (result + id * resultIndex ) side
-
+        calcChecksum (resultIndex + 1) newProvider (times - 1) (result + id * resultIndex) side
 
 parse = \input ->
     input
@@ -53,10 +51,10 @@ everySecond = \list ->
         else
             acc
 
-IDProvider := {firstID: U64, lastID: U64, list: List U8}
+IDProvider := { firstID : U64, lastID : U64, list : List U8 }
 
 idProviderInit = \firstID, lastID, list ->
-    @IDProvider{firstID, lastID, list}
+    @IDProvider { firstID, lastID, list }
 
 getNextID : IDProvider, [Front, Back] -> Result (U64, IDProvider) [Done]
 getNextID = \idProvider, side ->
@@ -65,32 +63,33 @@ getNextID = \idProvider, side ->
         Back -> getNextIDBack idProvider
 
 getNextIDFront : IDProvider -> Result (U64, IDProvider) [Done]
-getNextIDFront = \@IDProvider{firstID, lastID, list} ->
+getNextIDFront = \@IDProvider { firstID, lastID, list } ->
     when list is
         [] ->
             Err Done
+
         [first, .. as rest] ->
             if first == 0 then
-                getNextIDFront (@IDProvider{firstID: firstID+1, lastID, list: rest })
+                getNextIDFront (@IDProvider { firstID: firstID + 1, lastID, list: rest })
             else
-                Ok (firstID, @IDProvider{firstID, lastID, list: list |> List.update 0 \old -> old - 1})
+                Ok (firstID, @IDProvider { firstID, lastID, list: list |> List.update 0 \old -> old - 1 })
 
-
-getNextIDBack : IDProvider-> Result (U64, IDProvider) [Done]
-getNextIDBack = \@IDProvider{firstID, lastID, list} ->
+getNextIDBack : IDProvider -> Result (U64, IDProvider) [Done]
+getNextIDBack = \@IDProvider { firstID, lastID, list } ->
     when list is
         [] ->
             Err Done
+
         [.. as rest, last] ->
             if last == 0 then
-                getNextIDBack (@IDProvider{firstID, lastID: lastID-1, list: rest })
+                getNextIDBack (@IDProvider { firstID, lastID: lastID - 1, list: rest })
             else
                 lastElement = list |> List.len |> Num.sub 1
-                Ok (lastID, @IDProvider{firstID, lastID, list: list |> List.update lastElement \old -> old - 1})
+                Ok (lastID, @IDProvider { firstID, lastID, list: list |> List.update lastElement \old -> old - 1 })
 
 expect
     got = part2 example
-    expected = Ok "TODO"
+    expected = Ok "2858"
     got == expected
 
 part2 = \_input ->
