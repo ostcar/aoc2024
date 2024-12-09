@@ -93,5 +93,106 @@ expect
     expected = Ok "2858"
     got == expected
 
-part2 = \_input ->
-    Err TODO
+part2 = \input ->
+    numbers = parse input
+    data = toData numbers
+    maxFileID = (numbers |> List.len) // 2
+
+    { start: At maxFileID, end: At 0 }
+    |> List.range
+    |> List.walk data \acc, index ->
+        defragmentOne acc index
+    |> List.walkWithIndex 0 \acc, element, index ->
+        when element is
+            File nr ->
+                acc + nr * index
+
+            Empty ->
+                acc
+    |> Num.toStr
+    |> Ok
+
+toData : List U8 -> List [Empty, File U64]
+toData = \numbers ->
+    emptyData =
+        numbers
+        |> List.walk 0 \acc, e -> acc + (Num.toU64 e)
+        |> List.withCapacity
+
+    numbers
+    |> List.walkWithIndex emptyData \acc, number, index ->
+        space =
+            if index % 2 == 0 then
+                File (index // 2)
+            else
+                Empty
+        acc
+        |> List.concat (List.repeat space (number |> Num.toU64))
+
+defragmentOne : List [Empty, File U64], U64 -> List [Empty, File U64]
+defragmentOne = \list, fileID ->
+    when findFile list fileID is
+        Ok (start, end) ->
+            len = end - start
+            when findFreeSpace list len start 0 is
+                Ok index ->
+                    list
+                    |> replaceChunk index (List.sublist list { start, len })
+                    |> replaceChunk start (List.repeat Empty len)
+
+                Err NotFound ->
+                    list
+
+        Err NotFound ->
+            list
+
+findFile = \list, file ->
+    step =
+        list
+        |> List.walkWithIndexUntil NotFound \acc, element, index ->
+            when acc is
+                NotFound ->
+                    if element == (File file) then
+                        Continue (FoundStart index)
+                    else
+                        Continue NotFound
+
+                FoundStart start ->
+                    if element == (File file) then
+                        Continue (FoundStart start)
+                    else
+                        Break (Found start index)
+
+                Found start end ->
+                    Break (Found start end)
+
+    when step is
+        NotFound -> Err NotFound
+        FoundStart start ->
+            Ok (start, list |> List.len)
+
+        Found start end ->
+            Ok (start, end)
+
+findFreeSpace = \list, space, before, offset ->
+    index =
+        list
+        |> List.findFirstIndex? \e -> e == Empty
+
+    if (offset + index) >= before then
+        Err NotFound
+    else if list |> List.sublist { start: index, len: space } == List.repeat Empty space then
+        Ok (offset + index)
+    else
+        list
+        |> List.dropFirst (index + 1)
+        |> findFreeSpace space before (offset + 1 + index)
+
+replaceChunk = \list, index, replacement ->
+    when replacement is
+        [first, .. as rest] ->
+            List.set list index first
+            |> replaceChunk (index + 1) rest
+
+        [] ->
+            list
