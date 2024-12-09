@@ -13,8 +13,7 @@ expect
 part1 = \input ->
     numbers = parse input
     fromFront = numbers |> everySecond
-    fromBehind = numbers |> List.reverse |> everySecond
-    maxFileID = fromBehind |> List.len |> Num.sub 1
+    maxFileID = fromFront |> List.len |> Num.sub 1
     idProvider = idProviderInit 0 maxFileID fromFront
 
     numbers
