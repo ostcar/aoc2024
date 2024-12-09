@@ -19,12 +19,14 @@ part1 = \input ->
 
     numbers
     |> List.walkWithIndex (0, 0, idProvider) \(result, resultIndex, ip), amount, index ->
-        if index % 2 == 0 then
-            calcChecksum resultIndex ip amount result Front
-            |> Result.withDefault (result, resultIndex, ip)
-        else
-            calcChecksum resultIndex ip amount result Back
-            |> Result.withDefault (result, resultIndex, ip)
+        side =
+            if index % 2 == 0 then
+                Front
+            else
+                Back
+
+        calcChecksum resultIndex ip amount result side
+        |> Result.withDefault (result, resultIndex, ip)
 
     |> \(a, _, _) -> a
     |> Num.toStr
