@@ -127,19 +127,139 @@ isUpper = \e ->
 toLower = \e ->
     e + 'A' - 'a'
 
+# expect
+#    got = part2
+#        """
+#        AAAA
+#        BBCD
+#        BBCC
+#        EEEC
+#        """
+#    expected = Ok "80"
+#    got == expected
+
+# expect
+#    got = part2
+#        """
+#        OOOOO
+#        OXOXO
+#        OOOOO
+#        OXOXO
+#        OOOOO
+#        """
+#    expected = Ok "436"
+#    got == expected
+
 expect
-    got = part2 example
-    expected = Ok "1206"
+    got = part2
+        """
+        EEEEE
+        EXXXX
+        EEEEE
+        EXXXX
+        EEEEE
+        """
+    expected = Ok "204"
     got == expected
 
+# expect
+#    got = part2
+#        """
+#        AAAAAA
+#        AAABBA
+#        AAABBA
+#        ABBAAA
+#        ABBAAA
+#        AAAAAA
+#        """
+#    expected = Ok "368"
+#    got == expected
+
+# expect
+#    got = part2 example
+#    expected = Ok "1206"
+#    got == expected
+
+# 852920 to low
 part2 = \input ->
     map = input |> parse?
 
     map
     |> findRegions
     |> List.map \{ indexes, element } ->
-        perimeter = countSides map element indexes
+        perimeter = countSides map indexes
+        dbg (perimeter, element)
         List.len indexes * perimeter
     |> List.sum
     |> Num.toStr
     |> Ok
+
+countSides : Map, List U64 -> U64
+countSides = \map, indexes ->
+    when indexes is
+        [] -> 0
+        [_] | [_, _] -> 4
+        [start, ..] ->
+            inRegion = Set.fromList indexes
+            walkBorder map start inRegion start Right 0
+
+isDone : Map, U64, Set U64, U64, _ -> Bool
+isDone = \map, start, inRegion, current, direction ->
+    if direction == Right then
+        Bool.false
+    else if start != current then
+        Bool.false
+    else if direction != Left then
+        Bool.true
+    else
+        when bottom map start is
+            Ok (_, bottomIndex) ->
+                Set.contains inRegion bottomIndex |> Bool.not
+
+            _ ->
+                Bool.true
+
+walkBorder = \map, start, inRegion, current, direction, result ->
+    dbg (current, direction, result)
+    if isDone map start inRegion current direction then
+        add = if direction == Left then 2 else 1
+        result + add
+        else
+
+    when nextPlace map current (turnLeft direction) is
+        Ok (_, nextIndex) if Set.contains inRegion nextIndex ->
+            walkBorder map start inRegion nextIndex (turnLeft direction) (result + 1)
+
+        _ ->
+            when nextPlace map current direction is
+                Ok (_, nextIndex) if Set.contains inRegion nextIndex ->
+                    walkBorder map start inRegion nextIndex direction result
+
+                _ ->
+                    when nextPlace map current (turnRight direction) is
+                        Ok (_, nextIndex) if Set.contains inRegion nextIndex ->
+                            walkBorder map start inRegion nextIndex (turnRight direction) (result + 1)
+
+                        _ ->
+                            walkBorder map start inRegion current (turnLeft direction |> turnLeft) (result + 2)
+
+nextPlace = \map, index, direction ->
+    when direction is
+        Right -> right map index
+        Left -> left map index
+        Bottom -> bottom map index
+        Top -> top map index
+
+turnLeft = \direction ->
+    when direction is
+        Right -> Top
+        Top -> Left
+        Left -> Bottom
+        Bottom -> Right
+
+turnRight = \direction ->
+    when direction is
+        Right -> Bottom
+        Bottom -> Left
+        Left -> Top
+        Top -> Right
