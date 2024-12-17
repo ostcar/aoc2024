@@ -3,7 +3,7 @@ app [part1, part2] {
     parser: "https://github.com/lukewilliamboswell/roc-parser/releases/download/0.9.0/w8YKp2YAgQt5REYk912HfKAHBjcXsrnvtjI0CBzoAT4.tar.br",
 }
 
-import parser.Parser exposing [Parser, sepBy, const, keep, skip, map]
+import parser.Parser exposing [Parser, sepBy, const, keep, skip]
 import parser.String exposing [parseStr, string, digits]
 
 part1 = \input ->
@@ -14,7 +14,7 @@ part1 = \input ->
     |> Ok
 
 Device : {
-    program : List U8,
+    program : List U64,
     registerA : U64,
     registerB : U64,
     registerC : U64,
@@ -32,7 +32,7 @@ compute = \device ->
         Err _ ->
             Ok device
 
-callOperant : U8, U8, Device -> Result Device _
+callOperant : U64, U64, Device -> Result Device _
 callOperant = \instruction, operant, device ->
     when instruction is
         0 ->
@@ -121,17 +121,59 @@ setRegisterB = \device, value ->
 setRegisterC = \device, value ->
     { device & registerC: value }
 
-getComboOperant : U8, Device -> Result U64 _
+getComboOperant : U64, Device -> Result U64 _
 getComboOperant = \operant, device ->
     when operant is
-        0 | 1 | 2 | 3 -> operant |> Num.toU64 |> Ok
+        0 | 1 | 2 | 3 -> operant |> Ok
         4 -> device.registerA |> Ok
         5 -> device.registerB |> Ok
         6 -> device.registerC |> Ok
         _ -> Err (IllegalOperant operant)
 
-part2 = \_input ->
-    Err TODO
+part2 = \input ->
+    startDevice = input |> parse?
+    startDevice
+    |> part2Helper? 0 0
+    |> Num.toStr
+    |> Ok
+
+part2Helper : Device, U64, U64 -> Result U64 _
+part2Helper = \device, index, result ->
+    if index == List.len device.program then
+        Ok result
+        else
+
+    expected = device.program |> List.takeLast (index + 1)
+
+    newResults : List U64
+    newResults =
+        List.range { start: At (result * 8), end: Length 8 }
+        |> List.walkTry? [] \acc, a ->
+            output =
+                device
+                |> setRegisterA a
+                |> compute?
+                |> .output
+            if output == expected then
+                acc |> List.append a |> Ok
+            else
+                acc |> Ok
+
+    when newResults is
+        [] ->
+            Err NoResult
+
+        _ ->
+            List.walkUntil newResults (Err NotFound) \state, r ->
+                when part2Helper device (index + 1) r is
+                    Err NoResult ->
+                        Continue state
+
+                    Err err ->
+                        Break (Err err)
+
+                    Ok finalResult ->
+                        Break (Ok finalResult)
 
 outputToStr = \device ->
     device.output
@@ -159,7 +201,7 @@ deviceParser =
     |> skip (string "\nRegister C: ")
     |> keep (digits)
     |> skip (string "\n\nProgram: ")
-    |> keep (digits |> map Num.toU8 |> sepBy (string ","))
+    |> keep (digits |> sepBy (string ","))
 
 listGet2 = \list, index ->
     v1 = List.get? list index
