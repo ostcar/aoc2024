@@ -29,7 +29,7 @@ compute = \device ->
             callOperant? instruction operant device
             |> compute
 
-        Err _ ->
+        Err OutOfBounds ->
             Ok device
 
 callOperant : U64, U64, Device -> Result Device _
@@ -131,8 +131,8 @@ getComboOperant = \operant, device ->
         _ -> Err (IllegalOperant operant)
 
 part2 = \input ->
-    startDevice = input |> parse?
-    startDevice
+    input
+    |> parse?
     |> part2Helper? 0 0
     |> Num.toStr
     |> Ok
