@@ -5,24 +5,18 @@ app [part1, part2] {
     ascii: "https://github.com/Hasnep/roc-ascii/releases/download/v0.2.0/F8xZFTEm1fA7RF6OA1jl6V_ef_roDHfwGsBva29RxEg.tar.br",
 }
 
-example =
-    """
-    example
-    data
-    """
-
-expect
-    got = part1 example
-    expected = Ok "TODO"
-    got == expected
-
 part1 = \_input ->
     Err TODO
 
-expect
-    got = part2 example
-    expected = Ok "TODO"
-    got == expected
-
 part2 = \_input ->
     Err TODO
+
+expect
+    example =
+        """
+        example
+        data
+        """
+    got = part1 example
+    expected = Ok "TODO"
+    got == expected
