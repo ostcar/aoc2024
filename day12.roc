@@ -1,8 +1,5 @@
 app [part1, part2] {
     pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
-    parser: "https://github.com/lukewilliamboswell/roc-parser/releases/download/0.9.0/w8YKp2YAgQt5REYk912HfKAHBjcXsrnvtjI0CBzoAT4.tar.br",
-    array2d: "https://github.com/mulias/roc-array2d/releases/download/v0.3.1/2Jqajvxn36vRryyQBSluU6Fo6vVI5yNSYmcJcyaKp0Y.tar.br",
-    ascii: "https://github.com/Hasnep/roc-ascii/releases/download/v0.2.0/F8xZFTEm1fA7RF6OA1jl6V_ef_roDHfwGsBva29RxEg.tar.br",
 }
 
 example =
@@ -88,24 +85,24 @@ countPerimeter = \map, element, indexes ->
 around : Map, U64 -> List (U8, U64)
 around = \map, index ->
     [
-        top map index,
-        right map index,
-        bottom map index,
-        left map index,
+        topElementIndex map index,
+        rightElementIndex map index,
+        bottomElementIndex map index,
+        leftElementIndex map index,
     ]
     |> List.keepOks \e -> e
 
-top = \map, index ->
+topElementIndex = \map, index ->
     nIndex = Num.subChecked? index map.size
     List.get map.data nIndex
     |> Result.map \e -> (e, nIndex)
 
-bottom = \map, index ->
+bottomElementIndex = \map, index ->
     nIndex = index + map.size
     List.get map.data nIndex
     |> Result.map \e -> (e, nIndex)
 
-right = \map, index ->
+rightElementIndex = \map, index ->
     nIndex = index + 1
     if nIndex % map.size == 0 then
         Err OutOfBounds
@@ -113,7 +110,7 @@ right = \map, index ->
         List.get map.data nIndex
         |> Result.map \e -> (e, nIndex)
 
-left = \map, index ->
+leftElementIndex = \map, index ->
     if index % map.size == 0 then
         Err OutOfBounds
     else
@@ -127,28 +124,94 @@ isUpper = \e ->
 toLower = \e ->
     e + 'A' - 'a'
 
-# expect
-#    got = part2
-#        """
-#        AAAA
-#        BBCD
-#        BBCC
-#        EEEC
-#        """
-#    expected = Ok "80"
-#    got == expected
+part2 = \input ->
+    map = input |> parse?
 
-# expect
-#    got = part2
-#        """
-#        OOOOO
-#        OXOXO
-#        OOOOO
-#        OXOXO
-#        OOOOO
-#        """
-#    expected = Ok "436"
-#    got == expected
+    map
+    |> findRegions
+    |> List.map \region ->
+        (List.len region.indexes) * (countFence map region)
+    |> List.sum
+    |> Inspect.toStr
+    |> Ok
+
+countFence = \map, { element, indexes } ->
+    indexes
+    |> List.sortAsc
+    |> List.walk { top: [], left: [], bottom: [], right: [] } \acc, index ->
+        topElement = topElementIndex map index |> Result.map .0
+        rightElement = rightElementIndex map index |> Result.map .0
+        leftElement = leftElementIndex map index |> Result.map .0
+        bottomElement = bottomElementIndex map index |> Result.map .0
+
+        row = (index // map.size)
+        col = (index % map.size)
+
+        acc2 =
+            if topElement != Ok element then
+                { acc & top: List.append acc.top (row, col) }
+            else
+                acc
+
+        acc3 =
+            if rightElement != Ok element then
+                { acc2 & right: List.append acc2.right (col, row) }
+            else
+                acc2
+
+        acc4 =
+            if bottomElement != Ok element then
+                { acc3 & bottom: List.append acc3.bottom (row, col) }
+            else
+                acc3
+
+        acc5 =
+            if leftElement != Ok element then
+                { acc4 & left: List.append acc4.left (col, row) }
+            else
+                acc4
+
+        acc5
+    |> \{ top, bottom, left, right } ->
+        (top |> countSides 1)
+        +
+        (bottom |> countSides 1)
+        +
+        (left |> List.sortWith (\(a, _), (b, _) -> Num.compare a b) |> countSides 1)
+        +
+        (right |> List.sortWith (\(a, _), (b, _) -> Num.compare a b) |> countSides 1)
+
+countSides = \sides, result ->
+    when sides is
+        [] | [_] -> result
+        [(a1, b1), (a2, b2), ..] ->
+            if a1 == a2 && b1 + 1 == b2 then
+                countSides (List.dropFirst sides 1) result
+            else
+                countSides (List.dropFirst sides 1) (result + 1)
+
+expect
+    got = part2
+        """
+        AAAA
+        BBCD
+        BBCC
+        EEEC
+        """
+    expected = Ok "80"
+    got == expected
+
+expect
+    got = part2
+        """
+        OOOOO
+        OXOXO
+        OOOOO
+        OXOXO
+        OOOOO
+        """
+    expected = Ok "436"
+    got == expected
 
 expect
     got = part2
@@ -159,107 +222,23 @@ expect
         EXXXX
         EEEEE
         """
-    expected = Ok "204"
+    expected = Ok "236"
     got == expected
 
-# expect
-#    got = part2
-#        """
-#        AAAAAA
-#        AAABBA
-#        AAABBA
-#        ABBAAA
-#        ABBAAA
-#        AAAAAA
-#        """
-#    expected = Ok "368"
-#    got == expected
+expect
+    got = part2
+        """
+        AAAAAA
+        AAABBA
+        AAABBA
+        ABBAAA
+        ABBAAA
+        AAAAAA
+        """
+    expected = Ok "368"
+    got == expected
 
-# expect
-#    got = part2 example
-#    expected = Ok "1206"
-#    got == expected
-
-# 852920 to low
-part2 = \input ->
-    map = input |> parse?
-
-    map
-    |> findRegions
-    |> List.map \{ indexes, element } ->
-        perimeter = countSides map indexes
-        dbg (perimeter, element)
-        List.len indexes * perimeter
-    |> List.sum
-    |> Num.toStr
-    |> Ok
-
-countSides : Map, List U64 -> U64
-countSides = \map, indexes ->
-    when indexes is
-        [] -> 0
-        [_] | [_, _] -> 4
-        [start, ..] ->
-            inRegion = Set.fromList indexes
-            walkBorder map start inRegion start Right 0
-
-isDone : Map, U64, Set U64, U64, _ -> Bool
-isDone = \map, start, inRegion, current, direction ->
-    if direction == Right then
-        Bool.false
-    else if start != current then
-        Bool.false
-    else if direction != Left then
-        Bool.true
-    else
-        when bottom map start is
-            Ok (_, bottomIndex) ->
-                Set.contains inRegion bottomIndex |> Bool.not
-
-            _ ->
-                Bool.true
-
-walkBorder = \map, start, inRegion, current, direction, result ->
-    dbg (current, direction, result)
-    if isDone map start inRegion current direction then
-        add = if direction == Left then 2 else 1
-        result + add
-        else
-
-    when nextPlace map current (turnLeft direction) is
-        Ok (_, nextIndex) if Set.contains inRegion nextIndex ->
-            walkBorder map start inRegion nextIndex (turnLeft direction) (result + 1)
-
-        _ ->
-            when nextPlace map current direction is
-                Ok (_, nextIndex) if Set.contains inRegion nextIndex ->
-                    walkBorder map start inRegion nextIndex direction result
-
-                _ ->
-                    when nextPlace map current (turnRight direction) is
-                        Ok (_, nextIndex) if Set.contains inRegion nextIndex ->
-                            walkBorder map start inRegion nextIndex (turnRight direction) (result + 1)
-
-                        _ ->
-                            walkBorder map start inRegion current (turnLeft direction |> turnLeft) (result + 2)
-
-nextPlace = \map, index, direction ->
-    when direction is
-        Right -> right map index
-        Left -> left map index
-        Bottom -> bottom map index
-        Top -> top map index
-
-turnLeft = \direction ->
-    when direction is
-        Right -> Top
-        Top -> Left
-        Left -> Bottom
-        Bottom -> Right
-
-turnRight = \direction ->
-    when direction is
-        Right -> Bottom
-        Bottom -> Left
-        Left -> Top
-        Top -> Right
+expect
+    got = part2 example
+    expected = Ok "1206"
+    got == expected
