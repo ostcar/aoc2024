@@ -31,14 +31,20 @@ expect
     got == expected
 
 part1 = \input ->
+    solveShortestPath? input
+    |> .distance
+    |> Num.toStr
+    |> Ok
+
+solveShortestPath = \input ->
     { array, start, end } = input |> parse?
 
     startNode = { index: start, direction: East }
     isGoal = \{ index } -> index == end
 
-    getNeighbors = \{ index, direction } ->
-        (left, right) = turn index direction
-        when mayGo array index direction is
+    getNeighbors = \{ index, direction }, way ->
+        (left, right) = turn index direction way
+        when mayGo array index direction way is
             Ok path ->
                 [path, left, right]
 
@@ -46,7 +52,6 @@ part1 = \input ->
                 [left, right]
 
     shortestPath? startNode isGoal getNeighbors
-    |> Num.toStr
     |> Ok
 
 parse = \input ->
@@ -62,13 +67,14 @@ parse = \input ->
     end = array |> Array2D.findFirstIndex? \e -> e == 'E'
     Ok { array, start, end }
 
-mayGo = \array, index, direction ->
+mayGo = \array, index, direction, way ->
     nIndex = nextIndex? array index direction
     when Array2D.get array nIndex is
         Ok '#' -> Err Wall
         Err _ -> Err Invalid
         Ok _ ->
-            Ok { node: { index: nIndex, direction }, distance: 1 }
+            n = { index: nIndex, direction }
+            Ok { node: n, distance: 1, way: List.append way n }
 
 nextIndex = \array, index, direction ->
     shape = array |> Array2D.shape
@@ -80,10 +86,10 @@ nextIndex = \array, index, direction ->
 
 Direction : [East, South, West, North]
 
-turn = \index, direction ->
+turn = \index, direction, way ->
     (
-        { node: { index, direction: (direction |> turnRight) }, distance: 1000 },
-        { node: { index, direction: (direction |> turnLeft) }, distance: 1000 },
+        { node: { index, direction: (direction |> turnRight) }, distance: 1000, way },
+        { node: { index, direction: (direction |> turnLeft) }, distance: 1000, way },
     )
 
 turnRight : Direction -> Direction
@@ -101,28 +107,31 @@ turnLeft = \direction ->
         West -> South
         North -> West
 
+# This is an abstract Dijkstra algorith. I had to modity it for part 2. See the commit before for a cleaner implementaiton:
+# https://github.com/ostcar/aoc2024/blob/4a932c45827ab5dc4f9a9efe51b79c77f6fe24e1/day16.roc#L104-L144
+
 Node a : a where a implements Eq
-NodeDistance a : { distance : U64, node : Node a }
-GetNeighbors a : Node a -> List (NodeDistance a)
+NodeDistance a : { distance : U64, node : Node a, way : List (Node a) }
+GetNeighbors a : Node a, U64, U64 -> List (NodeDistance a)
 IsGoal a : Node a -> Bool
 
-shortestPath : Node a, IsGoal a, GetNeighbors a -> Result U64 [NotFound]
+# shortestPath : Node a, IsGoal a, GetNeighbors a -> Result { distance : U64, way : List (Node a) } [NotFound]
 shortestPath = \start, goal, getNeighbors ->
-    shortestPathHelper [{ distance: 0, node: start }] [] goal getNeighbors
+    shortestPathHelper [{ distance: 0, node: start, way: [start] }] [] goal getNeighbors
 
 # shortestPathHelper : List (NodeDistance a), List (Node a), IsGoal a, GetNeighbors a -> Result U64 [NotFound]
 shortestPathHelper = \list, seen, isGoal, getNeighbors ->
     when list is
         [] -> Err NotFound
-        [{ distance, node }, .. as rest] ->
+        [{ distance, node, way }, .. as rest] ->
             if isGoal node then
-                Ok distance
+                Ok { distance, way }
                 else
 
             newSeen = seen |> List.append node
 
             node
-            |> getNeighbors
+            |> getNeighbors way
             |> List.dropIf \neighbor -> List.contains newSeen neighbor.node
             |> List.map \nodeDistance -> { nodeDistance & distance: nodeDistance.distance + distance }
             |> List.walk rest \acc, neighbor -> updateNodeDistance acc neighbor 0
@@ -135,7 +144,9 @@ updateNodeDistance = \list, newNodeDistance, index ->
             List.append list newNodeDistance
 
         Ok existingNodeDistance if existingNodeDistance.node == newNodeDistance.node ->
-            if newNodeDistance.distance < existingNodeDistance.distance then
+            if newNodeDistance.distance == existingNodeDistance.distance then
+                List.set list index { newNodeDistance & way: List.concat newNodeDistance.way existingNodeDistance.way }
+            else if newNodeDistance.distance < existingNodeDistance.distance then
                 List.set list index newNodeDistance
             else
                 list
@@ -143,10 +154,19 @@ updateNodeDistance = \list, newNodeDistance, index ->
         _ ->
             updateNodeDistance list newNodeDistance (index + 1)
 
-# expect
-#    got = part2 example
-#    expected = Ok "TODO"
-#    got == expected
+expect
+    got = part2 example
+    expected = Ok "45"
+    got == expected
 
-part2 = \_input ->
-    Err TODO
+part2 = \input ->
+    solveShortestPath? input
+    |> uniqueIndexes
+    |> Num.toStr
+    |> Ok
+
+uniqueIndexes = \{ way } ->
+    way
+    |> List.map .index
+    |> Set.fromList
+    |> Set.len
