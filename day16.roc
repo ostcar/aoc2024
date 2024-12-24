@@ -36,17 +36,14 @@ part1 = \input ->
     startNode = { index: start, direction: East }
     isGoal = \{ index } -> index == end
 
-    getNeighbors = \{ index, direction }, seen ->
+    getNeighbors = \{ index, direction } ->
         (left, right) = turn index direction
-        all =
-            when mayGo array index direction is
-                Ok path ->
-                    [path, left, right]
+        when mayGo array index direction is
+            Ok path ->
+                [path, left, right]
 
-                Err _ ->
-                    [left, right]
-        all
-        |> List.dropIf \f -> List.contains seen f.node
+            Err _ ->
+                [left, right]
 
     shortestPath? startNode isGoal getNeighbors
     |> Num.toStr
@@ -106,15 +103,14 @@ turnLeft = \direction ->
 
 Node a : a where a implements Eq
 NodeDistance a : { distance : U64, node : Node a }
-# TODO: Why does GetNeighbors need the `seen` argument? Why is it not possible to filter seen elements in shortestPathHelper?
-GetNeighbors a : Node a, List (Node a) -> List (NodeDistance a)
+GetNeighbors a : Node a -> List (NodeDistance a)
 IsGoal a : Node a -> Bool
 
 shortestPath : Node a, IsGoal a, GetNeighbors a -> Result U64 [NotFound]
 shortestPath = \start, goal, getNeighbors ->
     shortestPathHelper [{ distance: 0, node: start }] [] goal getNeighbors
 
-shortestPathHelper : List (NodeDistance a), List (Node a), IsGoal a, GetNeighbors a -> Result U64 [NotFound]
+# shortestPathHelper : List (NodeDistance a), List (Node a), IsGoal a, GetNeighbors a -> Result U64 [NotFound]
 shortestPathHelper = \list, seen, isGoal, getNeighbors ->
     when list is
         [] -> Err NotFound
@@ -123,12 +119,11 @@ shortestPathHelper = \list, seen, isGoal, getNeighbors ->
                 Ok distance
                 else
 
-            newSeen : List (Node a)
             newSeen = seen |> List.append node
 
             node
-            |> getNeighbors newSeen
-            # |> List.dropIf \neighbor -> List.contains newSeen neighbor.node
+            |> getNeighbors
+            |> List.dropIf \neighbor -> List.contains newSeen neighbor.node
             |> List.map \nodeDistance -> { nodeDistance & distance: nodeDistance.distance + distance }
             |> List.walk rest \acc, neighbor -> updateNodeDistance acc neighbor 0
             |> List.sortWith \{ distance: a }, { distance: b } -> Num.compare a b
