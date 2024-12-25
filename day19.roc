@@ -10,12 +10,25 @@ part1 = \input ->
         |> List.countIf \design ->
             run design pattern (Dict.empty {})
             |> .0
+            |> \n -> n > 0
+    |> Num.toStr
+    |> Ok
+
+part2 = \input ->
+    input
+    |> parse?
+    |> \{ pattern, designList } ->
+        designList
+        |> List.map \design ->
+            run design pattern (Dict.empty {})
+            |> .0
+        |> List.sum
     |> Num.toStr
     |> Ok
 
 run = \design, pattern, cache ->
     if design == "" then
-        v = Bool.true
+        v = 1
         newCache = Dict.insert cache design v
         (v, newCache)
         else
@@ -24,17 +37,14 @@ run = \design, pattern, cache ->
         Ok v -> (v, cache)
         Err KeyNotFound ->
             pattern
-            |> List.walkUntil (Bool.true, cache) \(_, accCache), p ->
+            |> List.walk (0, cache) \(n, accCache), p ->
                 if Str.startsWith design p then
                     Str.dropPrefix design p
                     |> run pattern accCache
                     |> \(r, newCache) ->
-                        if r then
-                            Break (Bool.true, newCache)
-                        else
-                            Continue (Bool.false, newCache)
+                        (r + n, newCache)
                 else
-                    Continue (Bool.false, accCache)
+                    (n, accCache)
 
             |> \(v, tCache) ->
                 newCache = Dict.insert tCache design v
@@ -54,23 +64,26 @@ parse = \input ->
 
     Ok { pattern, designList }
 
-part2 = \_input ->
-    Err TODO
+example =
+    """
+    r, wr, b, g, bwu, rb, gb, br
+
+    brwrr
+    bggr
+    gbbr
+    rrbgbr
+    ubwu
+    bwurrg
+    brgr
+    bbrgwb
+    """
 
 expect
-    example =
-        """
-        r, wr, b, g, bwu, rb, gb, br
-
-        brwrr
-        bggr
-        gbbr
-        rrbgbr
-        ubwu
-        bwurrg
-        brgr
-        bbrgwb
-        """
     got = part1 example
     expected = Ok "6"
+    got == expected
+
+expect
+    got = part2 example
+    expected = Ok "16"
     got == expected
