@@ -2,23 +2,22 @@ app [part1, part2] {
     pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
 }
 
-# 219558 to height
 part1 = \input ->
+    solve input 2
+
+part2 = \input ->
+    solve input 25
+
+solve = \input, directionalPads ->
     input
     |> Str.splitOn "\n"
     |> List.mapTry? \line ->
-        (len, found) =
+        dbg line
+        (len, _) =
             line
             |> Str.toUtf8
             |> findOnPad? 'A' [] Numeric
-            |> List.mapTry? \step ->
-                step
-                |> findOnPad 'A' [] Directional
-            |> List.join
-            |> List.mapTry? \step ->
-                step
-                |> findOnPad 'A' [] Directional
-            |> List.join
+            |> useNPads? directionalPads
             |> List.walk (Num.maxU64, []) \(acc, old), solution ->
                 if List.len solution < acc then
                     (List.len solution, solution)
@@ -29,15 +28,25 @@ part1 = \input ->
             line
             |> Str.dropSuffix "A"
             |> Str.toU64?
-        dbg (len, number, found |> Str.fromUtf8?)
+        dbg (len, number)
         Ok (len * number)
 
     |> List.sum
     |> Num.toStr
     |> Ok
 
-part2 = \_input ->
-    Err TODO
+useNPads = \input, n ->
+    dbg ("useNPads", n, List.len input)
+    if n == 0 then
+        Ok input
+        else
+
+    input
+    |> List.mapTry? \step ->
+        step
+        |> findOnPad 'A' [] Directional
+    |> List.join
+    |> useNPads (n - 1)
 
 findOnPad = \input, cur, result, pad ->
     when input is
