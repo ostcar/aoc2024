@@ -46,6 +46,15 @@ useNPads = \input, n ->
         step
         |> findOnPad 'A' [] Directional
     |> List.join
+    |> List.walk (Num.maxU64, []) \(acc, old), solution ->
+        len = List.len solution
+        if len > acc |> Num.addSaturated 1 then
+            (acc, old)
+        else if len < acc |> Num.subSaturated 1 then
+            (len, [solution])
+        else
+            (len, List.append old solution)
+    |> .1
     |> useNPads (n - 1)
 
 findOnPad = \input, cur, result, pad ->
