@@ -12,16 +12,13 @@ solve = \input, directionalPads ->
     input
     |> Str.splitOn "\n"
     |> List.mapTry? \line ->
-        (len, _) =
+        solution =
             line
             |> Str.toUtf8
             |> findOnPad? 'A' [] Numeric
             |> useNPads? directionalPads
-            |> List.walk (Num.maxU64, []) \(acc, old), solution ->
-                if List.len solution < acc then
-                    (List.len solution, solution)
-                else
-                    (acc, old)
+
+        len = solution |> List.len
 
         number =
             line
@@ -39,50 +36,27 @@ useNPads = \input, n ->
         else
 
     input
-    |> List.mapTry? \step ->
-        step
-        |> findOnPad 'A' [] Directional
-    |> List.join
-    |> List.walk (Num.maxU64, []) \(acc, old), solution ->
-        len = List.len solution
-        if len > acc |> Num.addSaturated 1 then
-            (acc, old)
-        else if len < acc |> Num.subSaturated 1 then
-            (len, [solution])
-        else
-            (len, List.append old solution)
-    |> .1
+    |> findOnPad? 'A' [] Directional
     |> useNPads (n - 1)
 
 findOnPad = \input, cur, result, pad ->
     when input is
         [] -> Ok result
         [first, .. as rest] ->
-            pathList = pathOnPad? cur first pad
-            nResult =
+            path = pathOnPad? cur first pad
+            newResult =
                 if result == [] then
-                    pathList
+                    path
                 else
-                    List.joinMap result \oneResult ->
-                        pathList
-                        |> List.map \onePath ->
-                            List.concat oneResult onePath
+                    List.concat result path
 
-            findOnPad rest first nResult pad
+            findOnPad rest first newResult pad
 
 pathOnPad = \from, to, pad ->
     (getFromCol, getFromRow) =
         when pad is
             Numeric -> (numericCol, numericRow)
             Directional -> (directionalCol, directionalRow)
-
-    fromCol = getFromCol? from
-    toCol = getFromCol? to
-    resultCol =
-        when Num.compare fromCol toCol is
-            GT -> List.repeat '<' (fromCol - toCol)
-            LT -> List.repeat '>' (toCol - fromCol)
-            EQ -> []
 
     fromRow = getFromRow? from
     toRow = getFromRow? to
@@ -92,18 +66,25 @@ pathOnPad = \from, to, pad ->
             LT -> List.repeat 'v' (toRow - fromRow)
             EQ -> []
 
+    fromCol = getFromCol? from
+    toCol = getFromCol? to
+    cmpLeftRight = Num.compare fromCol toCol
+    resultCol =
+        when cmpLeftRight is
+            GT -> List.repeat '<' (fromCol - toCol)
+            LT -> List.repeat '>' (toCol - fromCol)
+            EQ -> []
+
     var1 = List.concat resultRow resultCol
     var2 = List.concat resultCol resultRow
     both =
-        if var1 == var2 || forbidden from to var2 pad then
-            [var1]
-        else if forbidden from to var1 pad then
-            [var2]
+        if var1 == var2 || forbidden from to var2 pad || (cmpLeftRight == LT && (forbidden from to var1 pad |> Bool.not)) then
+            var1
         else
-            [var1, var2]
+            var2
 
     both
-    |> List.map \list -> list |> List.append 'A'
+    |> List.append 'A'
     |> Ok
 
 forbidden = \from, to, list, pad ->
