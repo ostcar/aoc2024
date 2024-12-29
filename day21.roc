@@ -12,7 +12,6 @@ solve = \input, directionalPads ->
     input
     |> Str.splitOn "\n"
     |> List.mapTry? \line ->
-        dbg line
         (len, _) =
             line
             |> Str.toUtf8
@@ -28,7 +27,6 @@ solve = \input, directionalPads ->
             line
             |> Str.dropSuffix "A"
             |> Str.toU64?
-        dbg (len, number)
         Ok (len * number)
 
     |> List.sum
@@ -36,7 +34,6 @@ solve = \input, directionalPads ->
     |> Ok
 
 useNPads = \input, n ->
-    dbg ("useNPads", n, List.len input)
     if n == 0 then
         Ok input
         else
@@ -73,11 +70,6 @@ findOnPad = \input, cur, result, pad ->
 
             findOnPad rest first nResult pad
 
-# expect
-#    got = findOnPad ['0', '2', '9', 'A'] 'A' [] Numeric
-#    expected = Ok [['<', 'A', '^', 'A', '>', '^', '^', 'A', 'v', 'v', 'v', 'A']]
-#    got == expected
-
 pathOnPad = \from, to, pad ->
     (getFromCol, getFromRow) =
         when pad is
@@ -100,11 +92,17 @@ pathOnPad = \from, to, pad ->
             LT -> List.repeat 'v' (toRow - fromRow)
             EQ -> []
 
-    List.concat resultRow resultCol
-    |> permutations
-    |> Set.fromList
-    |> Set.toList
-    |> List.dropIf \list -> forbidden from to list pad
+    var1 = List.concat resultRow resultCol
+    var2 = List.concat resultCol resultRow
+    both =
+        if var1 == var2 || forbidden from to var2 pad then
+            [var1]
+        else if forbidden from to var1 pad then
+            [var2]
+        else
+            [var1, var2]
+
+    both
     |> List.map \list -> list |> List.append 'A'
     |> Ok
 
@@ -129,16 +127,6 @@ forbidden = \from, to, list, pad ->
                 Bool.true
             else
                 Bool.false
-
-# expect
-#    got = pathNumberic 'A' '0' Numeric
-#    expected = Ok ['<', 'A']
-#    got == expected
-
-# expect
-#    got = pathNumberic '2' '9' Numeric
-#    expected = Ok ['>', '^', '^', 'A']
-#    got == expected
 
 numericRow = \n ->
     when n is
@@ -167,29 +155,6 @@ directionalCol = \n ->
         '^' | 'v' -> 1 |> Ok
         'A' | '>' -> 2 |> Ok
         _ -> Err InvalidInpit
-
-permutations : List a -> List (List a)
-permutations = \list ->
-    when list is
-        [] | [_] ->
-            [list]
-
-        [first, .. as rest] ->
-            permutations rest
-            |> List.joinMap \perm ->
-                { start: At 0, end: Before (List.len list) }
-                |> List.range
-                |> List.map \index ->
-                    before = List.takeFirst perm index
-                    after = List.dropFirst perm index
-
-                    before
-                    |> List.append first
-                    |> List.concat after
-expect
-    got = permutations [1, 2, 3]
-    expected = [[1, 2, 3], [2, 1, 3], [2, 3, 1], [1, 3, 2], [3, 1, 2], [3, 2, 1]]
-    got == expected
 
 expect
     example =
