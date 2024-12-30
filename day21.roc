@@ -15,10 +15,14 @@ solve = \input, directionalPads ->
         solution =
             line
             |> Str.toUtf8
-            |> findOnPad? 'A' [] Numeric
-            |> useNPads? directionalPads
+            |> \sequence -> Dict.single sequence 1
+            |> solveSequencesInDict? Numeric
+            |> useNDirectionalPads? directionalPads
 
-        len = solution |> List.len
+        len =
+            solution
+            |> Dict.walk 0 \acc, sequence, num ->
+                acc + (List.len sequence) * num
 
         number =
             line
@@ -30,27 +34,42 @@ solve = \input, directionalPads ->
     |> Num.toStr
     |> Ok
 
-useNPads = \input, n ->
+useNDirectionalPads = \input, n ->
     if n == 0 then
         Ok input
         else
 
     input
-    |> findOnPad? 'A' [] Directional
-    |> useNPads (n - 1)
+    |> solveSequencesInDict? Directional
+    |> useNDirectionalPads (n - 1)
 
-findOnPad = \input, cur, result, pad ->
+solveSequencesInDict : Dict (List U8) U64, [Numeric, Directional] -> Result (Dict (List U8) U64) _
+solveSequencesInDict = \dict, pad ->
+    dict
+    |> Dict.toList # There is no Dict.walkTry
+    |> List.walkTry (Dict.empty {}) \acc, (oldSequence, num) ->
+        solveOneSequence? oldSequence 'A' [] pad
+        |> List.walk acc \newDict, newSequence ->
+            newDict
+            |> Dict.update newSequence \r ->
+                when r is
+                    Err Missing -> Ok num
+                    Ok n -> Ok (n + num)
+        |> Ok
+
+solveOneSequence : List U8, U8, List (List U8), [Numeric, Directional] -> Result (List (List U8)) _
+solveOneSequence = \input, cur, result, pad ->
     when input is
         [] -> Ok result
         [first, .. as rest] ->
             path = pathOnPad? cur first pad
             newResult =
                 if result == [] then
-                    path
+                    [path]
                 else
-                    List.concat result path
+                    List.append result path
 
-            findOnPad rest first newResult pad
+            solveOneSequence rest first newResult pad
 
 pathOnPad = \from, to, pad ->
     (getFromCol, getFromRow) =
@@ -77,13 +96,13 @@ pathOnPad = \from, to, pad ->
 
     var1 = List.concat resultRow resultCol
     var2 = List.concat resultCol resultRow
-    both =
+    combined =
         if var1 == var2 || forbidden from to var2 pad || (cmpLeftRight == LT && (forbidden from to var1 pad |> Bool.not)) then
             var1
         else
             var2
 
-    both
+    combined
     |> List.append 'A'
     |> Ok
 
