@@ -1,6 +1,9 @@
 app [part1, part2] {
     pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
+    ascii: "https://github.com/Hasnep/roc-ascii/releases/download/v0.2.0/F8xZFTEm1fA7RF6OA1jl6V_ef_roDHfwGsBva29RxEg.tar.br",
 }
+
+import ascii.Ascii
 
 part1 = \input ->
     input
@@ -9,13 +12,80 @@ part1 = \input ->
     |> Num.toStr
     |> Ok
 
-part2 = \_input ->
-    # input
-    # |> parse?
-    # |> findWrongZ 0 45 []
-    # |> Inspect.toStr
-    # |> Ok
-    Err TODO
+part2 = \input ->
+    store = input |> parse?
+    reversed = buildReversedStore store
+    firstCarry = reversed |> Dict.get? (Gate "x00" AND "y00")
+
+    runFullAdderChecks? store reversed firstCarry 1 []
+    |> List.mapTry? Ascii.fromStr
+    |> Ascii.sortAsc
+    |> List.map Ascii.toStr
+    |> Str.joinWith ","
+    |> Ok
+
+Store : Dict Str [Init U64, Gate Str [AND, OR, XOR] Str]
+
+runFullAdderChecks : Dict _ _, Dict _ _, Str, U64, List Str -> Result _ _
+runFullAdderChecks = \store, reversed, carry, n, result ->
+    if n == 44 then
+        # TODO: check last carry with z45
+        Ok result
+        else
+
+    when isFullAdder reversed n carry is
+        Ok newCarry ->
+            runFullAdderChecks store reversed newCarry (n + 1) result
+
+        Err (Switch s1 s2) ->
+            dbg ("switch", s1, s2)
+            newStore =
+                gate1 = Dict.get? store s1
+                gate2 = Dict.get? store s2
+                store
+                |> Dict.insert s1 gate2
+                |> Dict.insert s2 gate1
+            newReversed = buildReversedStore newStore
+            runFullAdderChecks newStore newReversed carry n (result |> List.append s1 |> List.append s2)
+
+        Err err ->
+            Err (ErrorInBit err n carry)
+
+buildReversedStore = \store ->
+    store
+    |> Dict.walk (Dict.empty {}) \dict, key, value ->
+        when value is
+            Gate a gate b ->
+                dict
+                |> Dict.insert (Gate a gate b) key
+                |> Dict.insert (Gate b gate a) key
+
+            _ -> dict
+
+isFullAdder : Dict _ Str, U64, Str -> Result Str [Switch Str Str]_
+isFullAdder = \reversedGates, z, carry ->
+    zN = numberedKey "z" z
+    xN = numberedKey "x" z
+    yN = numberedKey "y" z
+
+    xXORy = reversedGates |> Dict.get? (Gate xN XOR yN)
+    xANDy = reversedGates |> Dict.get? (Gate xN AND yN)
+    gateS = reversedGates |> Dict.get (Gate xXORy XOR carry) |> Result.mapErr? \_ -> Switch xXORy xANDy
+
+    if gateS != zN then
+        Err (Switch gateS zN)
+        else
+
+    preC = reversedGates |> Dict.get? (Gate xXORy AND carry)
+    newCarry = reversedGates |> Dict.get? (Gate preC OR xANDy)
+
+    Ok newCarry
+
+numberedKey = \l, n ->
+    if n < 10 then
+        "$(l)0$(Num.toStr n)"
+    else
+        "$(l)$(Num.toStr n)"
 
 solveAllZ : Store, U8, U64 -> U64
 solveAllZ = \gates, z, result ->
@@ -32,11 +102,7 @@ solveAllZ = \gates, z, result ->
 
 solveZ : Store, U8 -> Result U64 _
 solveZ = \gates, z ->
-    var =
-        if z < 10 then
-            "z0$(Num.toStr z)"
-        else
-            "z$(Num.toStr z)"
+    var = numberedKey "z" z
     solveValue gates var
 
 solveValue : Store, Str -> Result U64 _
@@ -51,46 +117,6 @@ solveValue = \gates, value ->
 
         Gate arg1 XOR arg2 ->
             (solveValue? gates arg1) |> Num.bitwiseXor (solveValue? gates arg2) |> Ok
-
-# findWrongZ = \gates, n, max, result ->
-#    if n == max then
-#        result
-#    else if dependsOnZ gates n then
-#        findWrongZ gates (n + 1) max result
-#    else
-#        findWrongZ gates (n + 1) max (List.append result n)
-
-# dependsOnZ = \gates, z ->
-#    var =
-#        if z < 10 then
-#            "z0$(Num.toStr z)"
-#        else
-#            "z$(Num.toStr z)"
-
-#    when solveOnValue gates var is
-#        Err _ ->
-#            Bool.false
-
-#        Ok list ->
-#            list
-#            |> List.all \e ->
-#                e
-#                |> Str.dropPrefix "y"
-#                |> Str.dropPrefix "x"
-#                |> Str.toU8
-#                |> Result.map \n ->
-#                    n <= z
-#                |> Result.withDefault Bool.false
-
-# solveOnValue : Store, Str -> Result (List Str) _
-# solveOnValue = \gates, value ->
-#    when Dict.get? gates value is
-#        Init _ -> [value] |> Ok
-#        Gate arg1 _ arg2 ->
-#            List.concat (solveOnValue? gates arg1) (solveOnValue? gates arg2)
-#            |> Ok
-
-Store : Dict Str [Init U64, Gate Str [AND, OR, XOR] Str]
 
 parse : Str -> Result Store _
 parse = \input ->
