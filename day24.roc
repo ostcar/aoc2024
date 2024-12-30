@@ -38,7 +38,6 @@ runFullAdderChecks = \store, reversed, carry, n, result ->
             runFullAdderChecks store reversed newCarry (n + 1) result
 
         Err (Switch s1 s2) ->
-            dbg ("switch", s1, s2)
             newStore =
                 gate1 = Dict.get? store s1
                 gate2 = Dict.get? store s2
